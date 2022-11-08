@@ -2,7 +2,7 @@ import express from "express";
 import morgan from "morgan";
 import bodyParser from "body-parser";
 import userRoute from "./routes/userRoute";
-import userRoute from "./routes/taskRoute";
+import taskRoute from "./routes/taskRoute";
 
 
 const app = express();
