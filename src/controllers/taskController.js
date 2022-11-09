@@ -1,8 +1,11 @@
 import Task from "./../models/taskModel";
 import catchAsync from "./../utils/catchAsync";
 import AppError from "./../utils/AppError";
+import cron from "node-cron";
+import EmailNotification from "../utils/EmailNotification";
 
 // POST - crete To-DO taskList
+
 exports.createTask = catchAsync(async (req, res, next) => {
   const task = await Task.create(req.body);
   if (!task) {
@@ -16,6 +19,7 @@ exports.createTask = catchAsync(async (req, res, next) => {
 });
 
 // GET - All TO-DO List
+
 exports.getAllList = catchAsync(async (req, res, next) => {
   const task = await Task.find().populate("user", "name");
   if (!task) {
@@ -30,6 +34,7 @@ exports.getAllList = catchAsync(async (req, res, next) => {
 });
 
 //GET - Task by Id
+
 exports.getTaskById = catchAsync(async (req, res, next) => {
   const task = await Task.findById(req.params.id);
   if (!task) {
@@ -43,6 +48,7 @@ exports.getTaskById = catchAsync(async (req, res, next) => {
 });
 
 //PUT - Task by Id
+
 exports.updateTask = catchAsync(async (req, res, next) => {
   const task = await Task.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
@@ -58,6 +64,7 @@ exports.updateTask = catchAsync(async (req, res, next) => {
 });
 
 //DELETE - Task by Id
+
 exports.deleteTask = catchAsync(async (req, res, next) => {
   const task = await Task.findByIdAndDelete(req.params.id);
   if (!task) {
@@ -70,6 +77,7 @@ exports.deleteTask = catchAsync(async (req, res, next) => {
 });
 
 // PUT - update comment field
+
 exports.addComment = catchAsync(async (req, res, next) => {
   const task = await Task.findByIdAndUpdate(
     req.params.id,
@@ -87,21 +95,56 @@ exports.addComment = catchAsync(async (req, res, next) => {
 });
 
 //GET - Aggregate
-exports.getListByTime = catchAsync(async (req, res, next) => {
+
+exports.getTaskAndStatus = catchAsync(async (req, res, next) => {
   const list = await Task.aggregate([
     {
       $group: {
         _id: { $toUpper: "$Add_to_list" },
-        lists: { $push: '$createdAt'}
-
+        task_name: { $push: "$task" },
+        current_status: { $push: "$status" },
       },
     },
-    
   ]);
   res.status(200).json({
     status: "success",
-    data: {
-      list,
-    },
+    tasks: list,
   });
+});
+
+//GET - Before days task and status
+
+exports.getBeforeDaysTask = catchAsync(async (req, res, next) => {
+  const task = await Task.find({ day: req.query.day }).populate("user", "name");
+  // $and: [{ time: req.query.time }, { status: req.query.status }],  //to get monday - task and status - done
+  console.log(task);
+  res.status(200).json({
+    status: "success",
+    results: task.length,
+    tasks: task,
+  });
+});
+
+//EOD Email Notification
+
+async function todomail() {
+  const taskList = await Task.find({ day: "Monday" });
+
+  let ToDoTask, ToDoStatus;
+
+  taskList.forEach((list) => {
+    ToDoTask = list.task;
+    ToDoStatus = list.status;
+
+    console.log(`task: ${ToDoTask} ,`, `status: ${ToDoStatus}`);
+
+    EmailNotification({
+      task: ToDoTask,
+      status: ToDoStatus,
+    });
+  });
+}
+
+exports.cronTask = cron.schedule(" */30 * * * * * ", () => {
+  todomail();
 });

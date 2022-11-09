@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { isObjectIdOrHexString } from "mongoose";
 
 const taskSchema = new mongoose.Schema(
   {
@@ -14,17 +14,17 @@ const taskSchema = new mongoose.Schema(
       enum: ["Work", "Personal"],
     },
     status: {
-      type: Boolean,
-      default: false,
+      type: String,
+      enum: ["Done","Not yet started","Pending"]
     },
-    time: {
+    day: {
       type: String,
     },
     comment: {
       type: String,
     },
   },
-  { timestamps: true }
+ {versionKey:false}
 );
 
 const Task = mongoose.model("Task", taskSchema);
