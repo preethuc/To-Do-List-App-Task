@@ -1,4 +1,6 @@
 import Task from "./../models/taskModel";
+import User from "./../models/userModel";
+
 import catchAsync from "./../utils/catchAsync";
 import AppError from "./../utils/AppError";
 import cron from "node-cron";
@@ -127,24 +129,25 @@ exports.getBeforeDaysTask = catchAsync(async (req, res, next) => {
 
 //EOD Email Notification
 
-async function todomail() {
-  const taskList = await Task.find({ day: "Monday" });
-
-  let ToDoTask, ToDoStatus;
-
-  taskList.forEach((list) => {
-    ToDoTask = list.task;
-    ToDoStatus = list.status;
-
-    console.log(`task: ${ToDoTask} ,`, `status: ${ToDoStatus}`);
-
-    EmailNotification({
-      task: ToDoTask,
-      status: ToDoStatus,
+const EODTodoMail = async () => {
+  const todoList = await Task.find({ day: "Monday" });
+  let EODMessage = "";
+  let userId;
+  todoList.forEach(async (list) => {
+    EODMessage =
+      EODMessage +
+      "\n" +
+      `To-Do User's Task ${list.user} : ${list.task} is in the status of "${list.status}"`;
+    userId = await User.find({ _id: list.user });
+    userId.forEach((list) => {
+      EmailNotification({
+        message: EODMessage,
+        email: list.email,
+      });
     });
   });
-}
+};
 
-exports.cronTask = cron.schedule(" */30 * * * * * ", () => {
-  todomail();
+exports.cronTask = cron.schedule("  * */10 * * * ", () => {
+  EODTodoMail();
 });

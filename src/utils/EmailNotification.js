@@ -1,10 +1,8 @@
 import nodemailer from "nodemailer";
 
 const EmailNotification = async (options) => {
-  
-  // const arrTostr = (options.message).join()
-  // console.log(arrTostr);
-  // console.log(options.email);
+  console.log("inside the mail");
+
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -13,16 +11,11 @@ const EmailNotification = async (options) => {
     },
   });
 
-  const task = options.task
-  const status = options.status
-  const message = `
-  task "${task}" is in the status of "${status}"`
-
   const mailOptions = {
     from: "chelladuraipreetha@gmail.com",
-    to: "chelladuraipreetha@gmail.com",
+    to: options.email,
     subject: "EOD Status",
-    text: message
+    text: options.message,
   };
 
   await transporter.sendMail(mailOptions);
