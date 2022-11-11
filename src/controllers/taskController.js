@@ -150,6 +150,6 @@ const EODTodoMail = async () => {
   });
 };
 
-exports.cronTask = cron.schedule(" */10 * * * * * ", () => {
+exports.cronTask = cron.schedule("  * */10 * * * ", () => {
   EODTodoMail();
 });
