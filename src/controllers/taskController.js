@@ -1,6 +1,5 @@
 import Task from "./../models/taskModel";
 import User from "./../models/userModel";
-
 import catchAsync from "./../utils/catchAsync";
 import AppError from "./../utils/AppError";
 import cron from "node-cron";
@@ -117,8 +116,10 @@ exports.getTaskAndStatus = catchAsync(async (req, res, next) => {
 //GET - Before days task and status
 
 exports.getBeforeDaysTask = catchAsync(async (req, res, next) => {
-  const task = await Task.find({ day: req.query.day }).populate("user", "name");
-  // $and: [{ time: req.query.time }, { status: req.query.status }],  //to get monday - task and status - done
+  // const task = await Task.find({ day: req.query.day }).populate("user", "name");
+  const task = await Task.find({
+    $and: [{ day: req.query.day }, { status: req.query.status }],
+  }).populate("user", "name"); //to get monday - task and status - done
   console.log(task);
   res.status(200).json({
     status: "success",
@@ -130,24 +131,25 @@ exports.getBeforeDaysTask = catchAsync(async (req, res, next) => {
 //EOD Email Notification
 
 const EODTodoMail = async () => {
-  const todoList = await Task.find({ day: "Monday" });
-  let EODMessage = "";
-  let userId;
-  todoList.forEach(async (list) => {
-    EODMessage =
-      EODMessage +
-      "\n" +
-      `To-Do User's Task ${list.user} : ${list.task} is in the status of "${list.status}"`;
-    userId = await User.find({ _id: list.user });
-    userId.forEach((list) => {
-      EmailNotification({
-        message: EODMessage,
-        email: list.email,
-      });
-    });
+  const todoList = await Task.find({
+    status: "Pending",
+    // $and: [{ day: "Monday" }, { status: "Pending" }],
+  });
+  const userTodo = await User.findOne({ user: todoList[0].user });
+  console.log(todoList);
+  let nameOfUser = userTodo.name;
+  let EODMessage = `Pending task of User : ${nameOfUser}`;
+  let tasks = "";
+  todoList.forEach(async (todotask) => {
+    tasks = `${tasks} \n # ${todotask.task}`;
+    // console.log(tasks);
+  });
+  EmailNotification({
+    message: `${EODMessage}\n ${tasks}`,
+    email: userTodo.email,
   });
 };
 
-exports.cronTask = cron.schedule("  * */10 * * * ", () => {
+exports.cronTask = cron.schedule(" */10 * * * * * ", () => {
   EODTodoMail();
 });
